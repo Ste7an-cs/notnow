@@ -6,7 +6,25 @@
 
 #IncludeRegexTransform: 
 
+/Users/ste7an/CPP/c++_primer/4.5/include/twoSum.h
+iostream
+-
+map
+-
+vector
+-
+
+/Users/ste7an/CPP/c++_primer/4.5/isex.cpp
+iostream
+-
+vector
+-
+
 /Users/ste7an/CPP/c++_primer/4.5/main.cpp
 iostream
 -
+vector
+-
+include/twoSum.h
+/Users/ste7an/CPP/c++_primer/4.5/include/twoSum.h
 

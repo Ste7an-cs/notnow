@@ -143,6 +143,33 @@ depend:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/4_5.dir/build.make CMakeFiles/4_5.dir/build
 .PHONY : 4_5/fast
 
+isex.o: isex.cpp.o
+
+.PHONY : isex.o
+
+# target to build an object file
+isex.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/4_5.dir/build.make CMakeFiles/4_5.dir/isex.cpp.o
+.PHONY : isex.cpp.o
+
+isex.i: isex.cpp.i
+
+.PHONY : isex.i
+
+# target to preprocess a source file
+isex.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/4_5.dir/build.make CMakeFiles/4_5.dir/isex.cpp.i
+.PHONY : isex.cpp.i
+
+isex.s: isex.cpp.s
+
+.PHONY : isex.s
+
+# target to generate assembly for a file
+isex.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/4_5.dir/build.make CMakeFiles/4_5.dir/isex.cpp.s
+.PHONY : isex.cpp.s
+
 main.o: main.cpp.o
 
 .PHONY : main.o
@@ -170,6 +197,33 @@ main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/4_5.dir/build.make CMakeFiles/4_5.dir/main.cpp.s
 .PHONY : main.cpp.s
 
+twoSum.o: twoSum.cpp.o
+
+.PHONY : twoSum.o
+
+# target to build an object file
+twoSum.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/4_5.dir/build.make CMakeFiles/4_5.dir/twoSum.cpp.o
+.PHONY : twoSum.cpp.o
+
+twoSum.i: twoSum.cpp.i
+
+.PHONY : twoSum.i
+
+# target to preprocess a source file
+twoSum.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/4_5.dir/build.make CMakeFiles/4_5.dir/twoSum.cpp.i
+.PHONY : twoSum.cpp.i
+
+twoSum.s: twoSum.cpp.s
+
+.PHONY : twoSum.s
+
+# target to generate assembly for a file
+twoSum.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/4_5.dir/build.make CMakeFiles/4_5.dir/twoSum.cpp.s
+.PHONY : twoSum.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -179,9 +233,15 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... 4_5"
+	@echo "... isex.o"
+	@echo "... isex.i"
+	@echo "... isex.s"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
+	@echo "... twoSum.o"
+	@echo "... twoSum.i"
+	@echo "... twoSum.s"
 .PHONY : help
 
 
