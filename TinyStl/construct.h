@@ -73,7 +73,7 @@ template<class ForwardIter>
 void destroy(ForwardIter first, ForwardIter last)
 {
     _destory_Iter(first, last, std::is_trivially_destructible<
-            typename IteratorTraits<ForwardIter>::value_type>{});
+            typename iterator_traits<ForwardIter>::value_type>{});
 }
 
 
