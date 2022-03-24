@@ -332,9 +332,9 @@ operator-(const reverse_iterator<Iterator>& lhs, const reverse_iterator<Iterator
 }
 
 
-//TODO:function template operator+   overriding
+//TODO:function template operator+   overloading
 
-// compare operator overriding
+// compare operator overloading
 template <class Iterator>
 bool operator==(const reverse_iterator<Iterator>& lhs,
                 const reverse_iterator<Iterator>& rhs)

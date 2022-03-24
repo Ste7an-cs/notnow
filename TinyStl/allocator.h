@@ -6,7 +6,7 @@
 #define TINYSTL_ALLOCATOR_H
 
 #include"construct.h"
-
+#include<cstddef>
 namespace tinystl
 {
 template <class T>
@@ -18,7 +18,7 @@ public:
     typedef const T*        const_pointer;
     typedef T&              reference;
     typedef const T&        const_reference;
-    typedef size_t          size_type;
+    typedef size_t             size_type;
     typedef ptrdiff_t       difference_type;
 
 public:
@@ -29,8 +29,8 @@ public:
     static void deallocate(T* ptr, size_type size);
 
     static void construct(T* ptr);
-    static void construct(T* ptr, const T& value);      //placement new 在pty位置call T.copy_ctor构造对像
-    static void construct(T* ptr, T&& value);           //placement new  call T.move_ctor
+    static void construct(T *ptr,const T &value); // placement new 在pty位置call T.copy_ctor构造对像
+    static void construct(T *ptr, T &&value); // placement new  call T.move_ctor
 
     template<class ...Args>
     static void construct(T* ptr, Args&& ...args);       //placement new by parameter pack
@@ -111,7 +111,6 @@ void allocator<T>::destroy(T* first, T* last)
 
 
 
-}
 
 
 } //tinystl
