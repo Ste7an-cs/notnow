@@ -46,13 +46,12 @@ private:
 public:
 
     //vector ctor
-
+    //create a vector with default constructed elements
     vector() noexcept
     {
         default_init();
     }
 
-    //create a vector with default constructed elements
     //fill the vector with n default constructed elements
     explicit vector(size_type n)
     {
@@ -94,21 +93,186 @@ public:
         range_init(list.begin(), list.end(), tinystl::random_access_iterator_tag() );
    }
 
-    vector& operator=(const vector& rhs);
-    vector& operator=(vector&& rhs) noexcept;
+   //assignment operator
+   vector& operator=(const vector& rhs);
+   vector& operator=(vector&& rhs) noexcept;
 
-    vector& operator=(std::initializer_list<value_type> ilist)
-    {
-        vector tmp(ilist.begin(), ilist.end());
-        swap(tmp);
-        return *this;
-    }
+   vector& operator=(std::initializer_list<value_type> ilist)
+   {
+       vector tmp(ilist.begin(), ilist.end());
+       swap(tmp);
+       return *this;
+   }
 
+
+    //destroy
     ~vector()
     {
         destroy_and_recover(begin_, end_, cap_ - begin_);
         begin_ = end_ = cap_ = nullptr;
     }
+
+public:
+
+    //iterators
+
+    iterator                     begin()   noexcept { return begin_;}
+    const_iterator               begin()   const noexcept { return begin_;}
+    iterator                     end()     noexcept { return end_;}
+    const_iterator               end()     const noexcept { return end_;}
+
+    reverse_iterator             rbegin()  noexcept { return reverse_iterator(end());}
+    const_reverse_iterator       rbegin()  const noexcept {return const_reverse_iterator(end());}
+    reverse_iterator             rend()    noexcept { return reverse_iterator(begin());}
+    const_reverse_iterator       rend()    const noexcept { return const_reverse_iterator(begin());}
+
+    const_iterator              cbegin()   const noexcept   { return begin();}
+    const_iterator              cend()     const noexcept   { return end();}
+    const_reverse_iterator      crbegin()  const noexcept   { return rbegin();}
+    const_reverse_iterator      crend()    const noexcept   { return rend();}
+
+
+    //capacity
+
+    bool        empty()         const noexcept { return begin_ == end_; }
+    size_type   size()          const noexcept { return static_cast<size_type>(end_ - begin_) ; }
+    size_type   max_size()      const noexcept { return static_cast<size_type>(-1) / sizeof(T); }
+    size_type   capacity()      const noexcept { return static_cast<size_type>(cap_ - begin_); }
+
+
+    void        reserve(size_type new_cap);
+    void        shrink_to_fit();
+
+    //elements access
+
+    reference operator[](size_type n)
+    {
+        assert(n < size());
+        return *(begin_ + n);
+    }
+
+    const_reference operator[](size_type n) const
+    {
+        assert(n < size());
+        return *(begin_ + n);
+    }
+
+    reference at(size_type n)
+    {
+        if(n > size()) throw std::out_of_range("");
+        return (*this)[n];
+    }
+
+    const_reference at(size_type n) const
+    {
+        if(n > size()) throw std::out_of_range("");
+        return (*this)[n];
+    }
+
+    reference front()
+    {
+        assert(!empty());
+        return *begin_;
+    }
+    const_reference front() const
+    {
+        assert(!empty());
+       return  *begin_;
+    }
+
+    reference back()
+    {
+       assert(!empty());
+       return  *(end_ - 1);
+    }
+    reference back() const
+    {
+        assert(!empty());
+        return  *(end_ - 1);
+    }
+
+    pointer data()          noexcept { return begin_;}
+    const_pointer data() const noexcept { return begin_;}
+
+    //assign
+    void assign(size_type n, const value_type& value)
+    { fill_assign(n, value); }
+
+   template<class InputIter, typename std::enable_if<
+           tinystl::is_input_iterator<InputIter>::value, int> = 0>
+    void assign(InputIter first, InputIter last)
+   {
+        assert(!(last < first));
+        copy_assign(first, last, tinystl::iterator_category(first));
+   }
+
+   void assign(std::initializer_list<value_type> list)
+   { copy_assign(list.begin(), list.end(), tinystl::random_access_iterator_tag()); }
+
+
+   //emplace / emplace_back
+
+   template<class... Args>
+   iterator emplace(const_iterator pos, Args&&... args);
+
+
+    template<class... Args>
+    iterator emplace_back(Args&& ...args);
+
+
+    //push_back / pop_back
+    void push_back(const value_type& value);
+    void push_back(value_type&& value) { emplace_back(std::move(value)); }
+    void pop_back();
+
+    //insert
+
+    iterator insert(const_iterator pos, const value_type& value);
+    iterator insert(const_iterator pos, value_type&& value) {return emplace(pos, std::move(value)); }
+
+    iterator insert(const_iterator pos, size_type n, value_type& value)
+    {
+        assert(pos >= begin() && pos <= end());
+        return fill_insert(const_cast<iterator>(pos), n, value);
+    }
+
+    template<class InputIter, typename std::enable_if<
+            tinystl::is_input_iterator<InputIter>::value, int>::value = 0>
+    iterator insert(const_iterator pos, InputIter first, InputIter last)
+    {
+
+        assert(pos >= begin() && pos <= end() && !(last < first));
+        difference_type offset = pos - cbegin();
+        _range_insert(begin() + offset, first, last, tinystl::iterator_category(first) );
+        return begin() + offset;
+    }
+
+    iterator insert(const_iterator pos, std::initializer_list<value_type> list)
+    {
+        difference_type offset = pos - cbegin();
+        _range_insert(begin() + offset, list.begin(), list.end(), tinystl::random_access_iterator_tag() );
+        return begin() + offset;
+    }
+
+
+    //erase  / clear
+
+    iterator erase(const iterator pos);
+    iterator erase(const iterator first, const iterator last);
+    void     clear() { erase(begin() , end()); }
+
+
+    //resize  /reverse
+
+    void resize(size_type new_size){ return resize(new_size, value_type()); }
+    void resize(size_type new_size, value_type& value);
+
+    //TODO: algorithm
+    void reverse(){ }
+
+    //swap
+    void swap(vector& other) noexcept;
+
 
 
 private:
@@ -149,6 +313,9 @@ private:
     template<class ForwardIter>
     void        copy_assign(ForwardIter first, ForwardIter last, tinystl::forward_iterator_tag);
 
+    void        move_assign(vector&& other, std::true_type);
+    void        move_assign(vector&& other, std::false_type);
+
     //reallocate
 
     template<class... Args>
@@ -159,8 +326,13 @@ private:
     //insert
 
     iterator    fill_insert(iterator pos, size_type n, const value_type& value);
+
     template<class InputIter>
-    void        copy_insert(iterator pos, InputIter first, InputIter last);
+    void        _range_insert(iterator pos, InputIter first, InputIter last, tinystl::input_iterator_tag);
+    template<class ForwardIter>
+    void        _range_insert(iterator pos, ForwardIter first, ForwardIter last, tinystl::forward_iterator_tag);
+
+
 
 
     //shrink to fit
@@ -175,6 +347,11 @@ private:
 
     template<class T>
     void vector<T>::default_init() noexcept {
+
+    }
+
+    template<class T>
+    void vector<T>::reinsert(vector::size_type size) {
 
     }
 
