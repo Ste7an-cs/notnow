@@ -26,6 +26,15 @@ public:
     {
         std::cout<< "i am moved" << std::endl;
     }
+    Person& operator=(const Person& other)
+    {
+        m_age = other.m_age ;
+        m_name = other.m_name;
+        std::cout<< "i am copyed" << std::endl;
+        return *this;
+    }
+
+
     ~ Person()
     {
         std::cout<< "destroy" << std::endl;
@@ -37,9 +46,9 @@ private:
 
 
 int main() {
-
-    std::vector<Person> students;
+//    std::vector<int> set (10, 2);
     Person kate(18, "kate");
+    std::vector<Person> students(12 ,kate);
 //    std::cout<< "emplace back: lvalue" << std::endl;
 //    students.emplace_back(kate);
 
