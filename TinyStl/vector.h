@@ -5,7 +5,7 @@
 #ifndef TINYSTL_VECTOR_H
 #define TINYSTL_VECTOR_H
 #include "iterator.h"
-
+#include "uninitialized.h"
 namespace TINYSTL
 {
 
@@ -97,9 +97,9 @@ public:
    vector& operator=(const vector& rhs);
    vector& operator=(vector&& rhs) noexcept;
 
-   vector& operator=(std::initializer_list<value_type> ilist)
+   vector& operator=(std::initializer_list<value_type> list)
    {
-       vector tmp(ilist.begin(), ilist.end());
+       vector tmp(list.begin(), list.end());
        swap(tmp);
        return *this;
    }
@@ -345,15 +345,79 @@ private:
 
 };
 
-    template<class T>
-    void vector<T>::default_init() noexcept {
+template<class T>
+void vector<T>::default_init() noexcept {
+    try
+    {
+        begin_ = data_allocator::allocate(16);
+        end_ = begin_;
+        cap_ = begin_ + 16;
+    }
+    catch(...)
+    {
+        begin_ = nullptr;
+        end_ = nullptr;
+        cap_ = nullptr;
+    }
+}
 
+template<class T>
+void vector<T>::reinsert(vector::size_type size) {
+
+}
+
+template<class T>
+void vector<T>::fill_init(vector::size_type n, const value_type &value) {
+    const size_type cap = std::max(static_cast<size_type>(16), n);
+    init_space(n, cap );
+    tinystl::uninitialized_fill_n(begin_, n, value);
+}
+
+template<class T>
+void vector<T>::init_space(vector::size_type size, vector::size_type cap) {
+    try
+    {
+        begin_ = data_allocator::allocate(cap);
+        end_ = begin_ + size;
+        cap_ = begin_ + cap;
+    }
+    catch(...)
+    {
+        begin_ = nullptr;
+        end_ = nullptr;
+        cap_ = nullptr;
+        throw;
+    }
+}
+
+template<class T>
+vector<T>& vector<T>::operator=(const vector &rhs) {
+
+    if (this == &rhs)
+        return *this;
+    if (rhs.size() > capacity())
+    {
+        vector tmp(rhs.begin(), rhs.end);
+        swap(tmp);
+    }
+    else if(size() >= rhs.size())
+    {
+        auto i = tinystl::copy(rhs.begin(), rhs.end(), begin());
+        data_allocator::deallocate(i, end_);
+        end_ = begin_ + rhs.size();
+    }
+    else
+    {
+        tinystl::copy(rhs.begin(), rhs.begin() + size(), begin_);
+        tinystl::uninitialized_copy(rhs.begin + size(), rhs.end(), end_);
+        //TODO: cap_ 还是需要更新么？ //size < rhs.size < cap
+        cap_ = end_ = begin_ + rhs.size();
     }
 
-    template<class T>
-    void vector<T>::reinsert(vector::size_type size) {
 
-    }
+
+    return  *this;
+}
 
 
 }
