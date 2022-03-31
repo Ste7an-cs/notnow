@@ -44,7 +44,7 @@ void uninitialized_fill(ForwardIter first, ForwardIter last , const T& value)
 template<typename ForwardIter, typename Size, typename T>
 void _uninit_fill_n(ForwardIter first, Size n, const T& value, std::true_type )
 {
-    tinystl::fill_n(first, n value);
+    tinystl::fill_n(first, n, value);
 }
 
 template<typename ForwardIter, typename Size, typename T>
@@ -153,14 +153,42 @@ ForwardIter _uninit_copy_n(InputIter first, Size n, ForwardIter result, tinystl:
  * don't require an initialized  output range
  */
 
-    template<typename InputIter, typename ForwardIter>
-    ForwardIter uninitialized_copy_n(InputIter first, InputIter last, ForwardIter result)
+template<typename InputIter, typename ForwardIter>
+ForwardIter uninitialized_copy_n(InputIter first, InputIter last, ForwardIter result)
+{
+    return _uninit_copy_n(first, last, result,tinystl::iterator_category(first));
+
+}
+
+template<typename InputIter, typename ForwardIter>
+ForwardIter _uninit_move(InputIter first, InputIter last, ForwardIter result, std::false_type)
+{
+    ForwardIter cur = result;
+    try
     {
-        return _uninit_copy_n(first, last, result,tinystl::iterator_category(first));
-
+        for(; first != last; ++first, ++cur)
+            tinystl::construct(&*cur, std::move(*first));
     }
+    catch(...)
+    {
+        tinystl::destroy(result, cur);
+    }
+}
 
+template<typename InputIter, typename ForwardIter>
+ForwardIter _uninit_move(InputIter first, InputIter last, ForwardIter result, std::true_type)
+{
+    return tinystl::move(first, last, result);
+}
 
+//move ctor
+template<typename InputIter, typename ForwardIter>
+ForwardIter uninitialized_move(InputIter first, InputIter last, ForwardIter result)
+{
+    return _uninit_move(first, last, result,
+                        std::is_trivially_move_assignable<
+                        typename iterator_traits<InputIter>::value_type>{} );
+}
 
 } //namespace tinystl
 

@@ -13,9 +13,32 @@
 namespace tinystl
 {
 
+template<typename T>
+const T& max(const T& lhs, const T& rhs)
+{
+    return lhs < rhs ? rhs : lhs;
+}
+
+template<typename T, typename Compare>
+const T& max(const T& lhs, const T& rhs, Compare comp )
+{
+    return comp(lhs, rhs) ? rhs : lhs;
+}
+template<typename T>
+const T& min(const T& lhs, const T& rhs)
+{
+    return rhs < lhs ? rhs : lhs;
+}
+
+template<typename T, typename Compare>
+const T& min(const T& lhs, const T& rhs, Compare comp )
+{
+    return comp(rhs, lhs) ? rhs : lhs;
+}
 
 
-template<typename Tp, typename Size, typename Up>
+
+    template<typename Tp, typename Size, typename Up>
 typename std::enable_if<
     std::is_integral<Tp>::value && sizeof(Tp) == 1 &&
     !std::is_same<Tp, bool>::value &&
@@ -57,7 +80,7 @@ void _fill_aux(ForwardIter first, ForwardIter last, const T& value, tinystl::for
         *first = value;
     }
 }
-
+//fill
 template <typename ForwardIter, typename T>
 void fill(ForwardIter first, ForwardIter last, const T& value)
 {
@@ -82,6 +105,7 @@ template <typename RandomIter, typename OutputIter>
 OutputIter _copy_aux(RandomIter first, RandomIter last, OutputIter result,
                      random_access_iterator_tag)
 {
+    //copy assign
     for(auto n = last - first; n > 0; --n, ++first)
         *result = *first;
     return result;
@@ -90,9 +114,8 @@ OutputIter _copy_aux(RandomIter first, RandomIter last, OutputIter result,
 template<typename InputIter, typename OutputIter>
 OutputIter _copy(InputIter first, InputIter last, OutputIter result)
 {
-    _copy_aux(first, last, result, iterator_category(first));
+    return _copy_aux(first, last, result, iterator_category(first));
 }
-
 
 template<typename Tp, typename Up>
 typename std::enable_if<
@@ -106,15 +129,63 @@ _copy(Tp* first, Tp* last, Up* result)
     return result + n ;
 }
 
-
-
+//copy
 template<typename InputIter, typename OutputIter>
 OutputIter copy(InputIter first, InputIter last, OutputIter result)
 {
-    _copy(first, last, result);
+    return _copy(first, last, result);
 }
 
 
+template<typename InputIter, typename OutputIter>
+OutputIter _move_aux(InputIter first, InputIter last, OutputIter result, tinystl::input_iterator_tag)
+{
+    //move assign
+    for (; first != last;  ++first, ++result)
+    {
+        *result = std::move(*first);
+    }
+    return result;
+}
+
+    template<typename InputIter, typename OutputIter>
+OutputIter _move_aux(InputIter first, InputIter last, OutputIter result, tinystl::random_access_iterator_tag)
+{
+    //move assign
+    for (auto n = last - first; n> 0; --n, ++first, ++result)
+    {
+        *result = std::move(*first);
+    }
+    return result;
+}
+
+
+    template<typename InputIter, typename OutputIter>
+OutputIter _move(InputIter first, InputIter last, OutputIter result)
+{
+    return _move_aux(first, last, result, iterator_category(first));
+}
+
+// 为 trivially_move_assignable 类型提供特化版本
+template <class Tp, class Up>
+typename std::enable_if<
+ std::is_same<typename std::remove_const<Tp>::type, Up>::value &&
+ std::is_trivially_move_assignable<Up>::value,
+ Up*>::type
+_move(Tp* first, Tp* last, Up* result)
+{
+    const size_t n = static_cast<size_t>(last - first);
+    if (n != 0)
+        std::memmove(result, first, n * sizeof(Up));
+    return result + n;
+}
+
+//move
+template<typename InputIter, typename OutputIter>
+OutputIter move(InputIter first, InputIter last, OutputIter result)
+{
+    return _move(first, last, result);
+}
 
 
 

@@ -296,7 +296,7 @@ private:
 
 
     //destroy and deallocate
-    void        destroy_and_recover();
+    void        destroy_and_recover(Iter first, Iter last, size_type n);
 
 
     //calculate the growth size
@@ -363,7 +363,20 @@ void vector<T>::default_init() noexcept {
 
 template<class T>
 void vector<T>::reinsert(vector::size_type size) {
-
+    auto new_begin = data_allocator::allocate(size);
+    try
+    {
+        tinystl::uninitialized_move(begin(), end(), new_begin);
+    }
+    catch(...)
+    {
+        data_allocator::deallocate(new_begin, size);
+        throw;
+    }
+    data_allocator::deallocate(begin_, cap_ - begin_);
+    begin_ = new_begin;
+    end_ = new_begin + size;
+    cap_ = new_begin + size;
 }
 
 template<class T>
@@ -413,18 +426,76 @@ vector<T>& vector<T>::operator=(const vector &rhs) {
         //TODO: cap_ 还是需要更新么？ //size < rhs.size < cap
         cap_ = end_ = begin_ + rhs.size();
     }
-
-
-
     return  *this;
 }
 
+template<class T>
+vector<T> &vector<T>::operator=(vector &&rhs) noexcept {
+    destroy_and_recover(begin_, end_, end_ - begin_);
+    begin_ = rhs.begin_;
+    end_ = rhs.end_;
+    cap_ = rhs.cap_;
+    rhs.begin_ = nullptr;
+    rhs.end_ = nullptr;
+    rhs.cap_ = nullptr;
+    return *this;
+}
+
+template<class T>
+template<class Iter>
+void vector<T>::range_init(Iter first, Iter last, tinystl::forward_iterator_tag) {
+    //
+    const size_type n = tinystl::distance(first, last);
+    const size_type init_size = tinystl::max(n, 16);
+    init_space(n, init_size);
+    tinystl::uninitialized_copy(first, last, begin_);
+}
+
+template<class T>
+template<class Iter>
+void vector<T>::range_init(Iter first, Iter last, tinystl::input_iterator_tag) {
+    for(; first != last; ++first)
+        emplace_back(*first);
 
 }
 
+template<class T>
+void vector<T>::reserve(vector::size_type n) {
+    if (capacity() < n)
+    {
+        auto tmp = data_allocator::allocate(n);
+        const auto  old_size = size();
+        tinystl::uninitialized_move(begin_, end_, tmp);
+        data_allocator::deallocate(begin_, cap_ - begin_);
+        begin_ = tmp;
+        end_ = tmp + old_size;
+        cap_ =begin_ + n;
+    }
+
+
+}
+
+template<class T>
+void vector<T>::shrink_to_fit() {
+    if(end_ < cap_)
+        reinsert(size());
+}
+
+template<class T>
+template<class... Args>
+typename vector<T>::iterator
+vector<T>::emplace(vector::const_iterator pos, Args &&... args) {
+    assert(pos <= end() && pos >= begin());
+    const auto n = pos - cbegin();
 
 
 
 
+
+    return begin() + n;
+}
+
+
+} //namespace tinysel
 
 #endif //TINYSTL_VECTOR_H
