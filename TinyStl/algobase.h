@@ -38,7 +38,7 @@ const T& min(const T& lhs, const T& rhs, Compare comp )
 
 
 
-    template<typename Tp, typename Size, typename Up>
+template<typename Tp, typename Size, typename Up>
 typename std::enable_if<
     std::is_integral<Tp>::value && sizeof(Tp) == 1 &&
     !std::is_same<Tp, bool>::value &&
@@ -60,7 +60,7 @@ OutputIter _fill_n(OutputIter first, Size n, const T& value)
 }
 
 
-    template<typename OutputIter, typename Size, typename T>
+template<typename OutputIter, typename Size, typename T>
 OutputIter fill_n(OutputIter first, Size n, const T& value)
 {
     return _fill_n(first, n, value);
@@ -188,21 +188,56 @@ OutputIter move(InputIter first, InputIter last, OutputIter result)
 }
 
 
+template<typename BidiIter1, typename BidiIter2>
+BidiIter2 _copy_backward_aux(BidiIter1 first, BidiIter1 last, BidiIter2 result, tinystl::bidirectional_iterator_tag)
+{
+    while (first != last){
+        *--result = *--last;
+    }
+    return result;
 
+}
+template<typename BidiIter1, typename BidiIter2>
+BidiIter2 _copy_backward_aux(BidiIter1 first, BidiIter1 last, BidiIter2 result, tinystl::random_access_iterator_tag)
+{
+    for (auto n = last - first; n > 0; --n) {
+        *--result = *--last;
+    }
+    return result;
+}
 
+template<typename BidiIter1, typename BidiIter2>
+BidiIter2 copy_backward_dispatch(BidiIter1 first, BidiIter1 last, BidiIter2 result)
+{
+    return _copy_backward_aux(first, last, result, iterator_category(first));
+}
 
+    template<typename Tp, typename Up>
+typename std::enable_if<std::is_same<typename std::remove_const<Tp>::value, Up>::value &&
+         std::is_trivially_copy_assignable<Up>::value,
+         Up*>::type
+copy_backward_dispatch(Tp* first, Tp* last, Up* result)
+{
+    const auto n = static_cast<size_t>(last - first);
+    if(n)
+    {
+        result -= n;
+        std::memmove(result, first, n * sizeof(Up));
+    }
+    return result;
+}
+
+//copy backward
+template<typename BidiIter1, typename BidiIter2>
+BidiIter2 copy_backward(BidiIter1 first, BidiIter1 last, BidiIter2 result)
+{
+    return copy_backward_dispatch(first, last, result);
 }
 
 
 
 
-
-
-
-
-
-
-
+}//namespace tinystl
 
 
 
