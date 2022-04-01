@@ -296,7 +296,7 @@ private:
 
 
     //destroy and deallocate
-    void        destroy_and_recover(Iter first, Iter last, size_type n);
+    void        destroy_and_recover(iterator first, iterator last, size_type n);
 
 
     //calculate the growth size
@@ -487,6 +487,24 @@ typename vector<T>::iterator
 vector<T>::emplace(vector::const_iterator pos, Args &&... args) {
     assert(pos <= end() && pos >= begin());
     const auto n = pos - cbegin();
+    if (cap_ != end_)
+        if(pos == cend())
+        {
+            data_allocator ::construct(std::addressof(*end_), std::forward<Args>(args)...);
+            ++end_;
+        }
+        else
+        {
+            auto new_end = end_;
+            data_allocator::construct(std::addressof(*end_), *(end_ - 1));
+            ++new_end;
+            tinystl::copy_backward(begin()+ n , end_ -1, end_);
+            *(begin() + n ) = value_type(std::forward<Args>(args)...) ;
+        }
+    else
+    {
+        reallocate_emplace(pos, std::forward<Args>(args)...);
+    }
 
 
 
