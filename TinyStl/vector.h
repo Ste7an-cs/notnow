@@ -60,7 +60,7 @@ public:
 
    vector(size_type n, const value_type& value)
    {
-        fill(n, value);
+        fill_init(n, value);
    }
 
     //copy ctor from [first, last)
@@ -217,7 +217,7 @@ public:
 
 
     template<class... Args>
-    iterator emplace_back(Args&& ...args);
+    void emplace_back(Args&& ...args);
 
 
     //push_back / pop_back
@@ -232,7 +232,7 @@ public:
 
     iterator insert(const_iterator pos, size_type n, value_type& value)
     {
-        assert(pos >= begin() && pos <= end());
+        assert(pos >= cbegin() && pos <= cend());
         return fill_insert(const_cast<iterator>(pos), n, value);
     }
 
@@ -257,8 +257,8 @@ public:
 
     //erase  / clear
 
-    iterator erase(const iterator pos);
-    iterator erase(const iterator first, const iterator last);
+    iterator erase(const_iterator pos);
+    iterator erase(const_iterator first, const_iterator last);
     void     clear() { erase(begin() , end()); }
 
 
@@ -268,7 +268,7 @@ public:
     void resize(size_type new_size, value_type& value);
 
     //TODO: algorithm
-    void reverse(){ }
+//    void reverse() { tinystl::reverse(first(), begin())};
 
     //swap
     void swap(vector& other) noexcept;
@@ -344,7 +344,9 @@ private:
 
 
 };
-
+/*
+ * helper functions
+ */
 template<class T>
 void vector<T>::default_init() noexcept {
     try
@@ -361,6 +363,7 @@ void vector<T>::default_init() noexcept {
     }
 }
 
+//called by shrink to fit
 template<class T>
 void vector<T>::reinsert(vector::size_type size) {
     auto new_begin = data_allocator::allocate(size);
@@ -459,6 +462,66 @@ void vector<T>::range_init(Iter first, Iter last, tinystl::input_iterator_tag) {
 
 }
 
+
+template<class T>
+void vector<T>::destroy_and_recover(vector::iterator first, vector::iterator last, vector::size_type n) {
+    data_allocator::destroy(first, last);
+    data_allocator::deallocate(first, n);
+}
+
+template<class T>
+typename vector<T>::size_type
+vector<T>::get_new_cap(vector::size_type add_size) {
+    const auto old_size = capacity();
+    //TODO thrown length error
+    if (old_size > max_size() - old_size / 2){
+        return old_size +add_size > max_size() - 16
+        ? old_size + add_size : old_size + add_size +16;
+    }
+    const size_type new_size = old_size ==0
+            ? tinystl::max(add_size, static_cast<size_type>(16))
+            : tinystl::max(old_size + old_size /2, old_size + add_size);
+    return new_size;
+}
+
+
+template<class T>
+void vector<T>::fill_assign(vector::size_type n, const value_type &value) {
+    if(n > capacity()){
+        vector tmp(n, value);
+        swap(tmp);
+    }
+    else if(n > size()){
+        tinystl::fill(begin(), end(), value);
+        tinystl::uninitialized_fill_n(end_, n - size(), value);
+    }
+    else {
+        erase(tinystl::fill_n(begin(), end(), value), end_);
+    }
+}
+
+template<class T>
+template<class InputIter>
+void vector<T>::copy_assign(InputIter first, InputIter last, tinystl::input_iterator_tag) {
+    auto cur = begin_;
+    for (; first != last && cur != end_; ++first, ++cur)
+    {
+        *cur = *first;
+    }
+    if (first == last)
+    {
+        erase(cur, end_);
+    }
+    else
+    {
+        insert(end_, first, last);
+    }
+}
+
+/*
+ * capacity
+ */
+
 template<class T>
 void vector<T>::reserve(vector::size_type n) {
     if (capacity() < n)
@@ -481,6 +544,9 @@ void vector<T>::shrink_to_fit() {
         reinsert(size());
 }
 
+/*
+ *modifiers
+ */
 template<class T>
 template<class... Args>
 typename vector<T>::iterator
@@ -505,12 +571,95 @@ vector<T>::emplace(vector::const_iterator pos, Args &&... args) {
     {
         reallocate_emplace(pos, std::forward<Args>(args)...);
     }
-
-
-
-
-
     return begin() + n;
+}
+
+template<class T>
+template<class... Args>
+void vector<T>::emplace_back(Args &&... args) {
+    if(end_ != cap_){
+
+        data_allocator::construct(std::addressof(*end_), std::forward<Args>(args)...);
+        ++end_;
+    }
+    else
+        reallocate_emplace(end_, std::forward<Args>(args)...);
+}
+
+template<class T>
+void vector<T>::push_back(const value_type &value) {
+    if(end_ != cap_)
+    {
+        data_allocator::construct(std::addressof(end_), value);
+        ++end_;
+    }
+    else
+        reallocate_insert(end_, value);
+}
+
+template<class T>
+void vector<T>::pop_back() {
+    assert(!empty());
+    data_allocator::destroy(end_ - 1);
+    --end_;
+}
+
+template<class T>
+typename vector<T>::iterator
+vector<T>::insert(vector::const_iterator pos, const value_type &value) {
+    assert(pos <= end() && pos >= begin());
+    const auto n = pos - cbegin();
+    if (cap_ != end_)
+        if(pos == cend())
+        {
+            data_allocator ::construct(std::addressof(*end_), value);
+            ++end_;
+        }
+        else
+        {
+            auto new_end = end_;
+            data_allocator::construct(std::addressof(*end_), *(end_ - 1));
+            ++new_end;
+            auto value_copy = value;
+            tinystl::copy_backward(begin()+ n , end_ -1, end_);
+            *(begin() + n ) = std::move(value_copy);
+        }
+    else
+    {
+        reallocate_emplace(begin() + (pos - cbegin()),value );
+    }
+    return begin() + n;
+}
+
+template<class T>
+typename vector<T>::iterator vector<T>::erase(const_iterator pos) {
+    assert(pos >= begin() && pos <= end());
+    auto xpos = begin() + (pos - cbegin());
+    tinystl::move(xpos + 1, end(), xpos);
+    data_allocator::destroy(end_ - 1);
+    --end_;
+    return xpos;
+}
+
+template<class T>
+typename vector<T>::iterator
+vector<T>::erase(vector::const_iterator first, vector::const_iterator last) {
+    assert(first >= begin() && last <= end() && !(last < first));
+    const auto n = first - cbegin();
+    iterator erase_begin = begin() + n;
+    data_allocator::destroy((tinystl::move(erase_begin+(last - first), end_ , erase_begin)), end_);
+    end_ = end_ - (last - first);
+    return begin_ + n;
+}
+
+template<class T>
+void vector<T>::resize(vector::size_type new_size, value_type &value) {
+    if(new_size < size()){
+        erase(begin() + new_size, end() );
+    }
+    else{
+        insert(end(), new_size- size(), value);
+    }
 }
 
 
